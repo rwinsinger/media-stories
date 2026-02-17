@@ -1,36 +1,40 @@
 import { Link } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import type { AuthLayoutProps } from '@/types';
 import { home } from '@/routes';
 
-export default function AuthSimpleLayout({
-    children,
-    title,
-    description,
-}: AuthLayoutProps) {
+export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-            <div className="w-full max-w-sm">
+        <div className="dark relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-[#0d0d14] p-6 md:p-10">
+            {/* Background blobs */}
+            <div className="pointer-events-none absolute inset-0">
+                <div className="absolute left-1/4 top-1/3 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/20 blur-3xl" />
+                <div className="absolute right-1/4 bottom-1/3 h-72 w-72 translate-x-1/2 translate-y-1/2 rounded-full bg-pink-600/15 blur-3xl" />
+            </div>
+
+            <div className="relative w-full max-w-sm">
                 <div className="flex flex-col gap-8">
+                    {/* Logo */}
                     <div className="flex flex-col items-center gap-4">
                         <Link
                             href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
+                            className="flex items-center gap-2 font-semibold text-lg text-white"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
-                            </div>
-                            <span className="sr-only">{title}</span>
+                            <span className="text-2xl">🎞</span>
+                            <span className="bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">
+                                Media Stories
+                            </span>
                         </Link>
 
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
-                                {description}
-                            </p>
+                        <div className="space-y-1 text-center">
+                            <h1 className="text-xl font-semibold text-white">{title}</h1>
+                            <p className="text-sm text-white/50">{description}</p>
                         </div>
                     </div>
-                    {children}
+
+                    {/* Card */}
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
