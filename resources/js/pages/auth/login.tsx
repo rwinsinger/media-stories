@@ -58,7 +58,7 @@ export default function Login({
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
+                                            className="ml-auto text-sm text-violet-400 decoration-violet-400/40 hover:text-violet-300"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -99,9 +99,9 @@ export default function Login({
                         </div>
 
                         {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
+                            <div className="text-center text-sm text-white/50">
                                 Don't have an account?{' '}
-                                <TextLink href={register()} tabIndex={5}>
+                                <TextLink href={register()} tabIndex={5} className="text-violet-400 decoration-violet-400/40 hover:text-violet-300">
                                     Sign up
                                 </TextLink>
                             </div>

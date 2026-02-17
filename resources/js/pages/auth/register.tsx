@@ -100,9 +100,9 @@ export default function Register() {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-center text-sm text-white/50">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink href={login()} tabIndex={6} className="text-violet-400 decoration-violet-400/40 hover:text-violet-300">
                                 Log in
                             </TextLink>
                         </div>

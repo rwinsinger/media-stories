@@ -32,7 +32,11 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                     </div>
 
                     {/* Card */}
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm
+                        [&_label]:text-white/80
+                        [&_input]:text-white [&_input]:border-white/20 [&_input]:bg-white/8 [&_input]:placeholder:text-white/30
+                        [&_input:focus-visible]:border-violet-500 [&_input:focus-visible]:ring-violet-500/30
+                        [&_.text-muted-foreground]:text-white/50">
                         {children}
                     </div>
                 </div>
