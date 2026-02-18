@@ -329,11 +329,44 @@ export default function StoryEdit({ storyId }: Props) {
 }
 
 function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: () => void; onSaved: (frame: Frame) => void }) {
+    const [mediaUrl, setMediaUrl] = useState(frame.media_url);
+    const [mediaType, setMediaType] = useState<'image' | 'video'>(frame.media_type);
+    const [previewUrl, setPreviewUrl] = useState(frame.media_url);
     const [textContent, setTextContent] = useState(frame.text_content ?? '');
     const [duration, setDuration] = useState(frame.duration);
     const [audioUrl, setAudioUrl] = useState(frame.audio_url ?? '');
+    const [inputMode, setInputMode] = useState<'file' | 'url'>('file');
+    const [isUploading, setIsUploading] = useState(false);
     const [isAudioUploading, setIsAudioUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const isVideo = file.type.startsWith('video/');
+        setMediaType(isVideo ? 'video' : 'image');
+        setPreviewUrl(URL.createObjectURL(file));
+        setUploadError(null);
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const r = await fetch('/api/upload', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+            const data = await r.json() as { url?: string; message?: string };
+            if (r.ok && data.url) {
+                setMediaUrl(data.url);
+            } else {
+                setUploadError(data.message ?? 'Upload failed');
+                setPreviewUrl(mediaUrl);
+            }
+        } catch {
+            setUploadError('Upload failed. Please try again.');
+            setPreviewUrl(mediaUrl);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -358,6 +391,8 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({
+                    media_url: mediaUrl,
+                    media_type: mediaType,
                     text_content: textContent || null,
                     duration,
                     audio_url: audioUrl || null,
@@ -371,19 +406,71 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl shadow-violet-500/10">
+            <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl shadow-violet-500/10 max-h-[90vh] overflow-y-auto">
                 <h2 className="mb-4 text-lg font-semibold">Edit Frame</h2>
 
-                {/* Preview */}
+                {/* Live preview */}
                 <div className="mb-4 overflow-hidden rounded-lg bg-black aspect-video">
-                    {frame.media_type === 'image' ? (
-                        <img src={frame.media_url} alt="" className="h-full w-full object-contain" />
+                    {mediaType === 'image' ? (
+                        <img src={previewUrl} alt="" className="h-full w-full object-contain" />
                     ) : (
-                        <video src={frame.media_url} className="h-full w-full" controls />
+                        <video src={previewUrl} className="h-full w-full" controls />
                     )}
                 </div>
 
                 <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+                    {/* Replace media */}
+                    <div>
+                        <label className="mb-2 block text-sm font-medium">Replace Media (optional)</label>
+                        <div className="flex rounded-md border overflow-hidden mb-2">
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('file')}
+                                className={`flex-1 py-1.5 text-sm font-medium transition-colors ${inputMode === 'file' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            >
+                                Upload File
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('url')}
+                                className={`flex-1 py-1.5 text-sm font-medium transition-colors ${inputMode === 'url' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            >
+                                Use URL
+                            </button>
+                        </div>
+
+                        {inputMode === 'file' ? (
+                            <div>
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+                                    onChange={(e) => void handleFileChange(e)}
+                                    className="w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:text-primary-foreground"
+                                />
+                                {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
+                                {isUploading && <p className="mt-1 text-xs text-muted-foreground">Uploading...</p>}
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <input
+                                    type="url"
+                                    value={mediaUrl}
+                                    onChange={(e) => { setMediaUrl(e.target.value); setPreviewUrl(e.target.value); }}
+                                    className="w-full rounded-md border px-3 py-2 text-sm"
+                                    placeholder="https://..."
+                                />
+                                <select
+                                    value={mediaType}
+                                    onChange={(e) => setMediaType(e.target.value as 'image' | 'video')}
+                                    className="w-full rounded-md border px-3 py-2 text-sm"
+                                >
+                                    <option value="image">Image</option>
+                                    <option value="video">Video</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
                     <div>
                         <label className="mb-1 block text-sm font-medium">Caption / Text</label>
                         <textarea
@@ -415,8 +502,8 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
                     </div>
 
                     <div className="flex gap-2">
-                        <button type="submit" disabled={isSaving} className="flex-1 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50">
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        <button type="submit" disabled={isSaving || isUploading} className="flex-1 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50">
+                            {isSaving ? 'Saving...' : isUploading ? 'Uploading...' : 'Save Changes'}
                         </button>
                         <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm hover:bg-accent transition-colors">Cancel</button>
                     </div>
