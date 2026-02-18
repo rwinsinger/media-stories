@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { ShareStoryModal } from '@/components/share-story-modal';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Frame, Story } from '@/types';
 
@@ -19,6 +20,7 @@ export default function StoryEdit({ storyId }: Props) {
     const [isPublished, setIsPublished] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showFrameModal, setShowFrameModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
 
     useEffect(() => {
         fetch(`/api/stories/${storyId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -192,6 +194,12 @@ export default function StoryEdit({ storyId }: Props) {
                                 {story.is_published ? 'View Story' : 'Preview Draft'}
                             </button>
                             <button
+                                onClick={() => setShowShareModal(true)}
+                                className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity"
+                            >
+                                Share Story
+                            </button>
+                            <button
                                 onClick={() => void deleteStory()}
                                 className="w-full rounded-lg border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
                             >
@@ -200,6 +208,15 @@ export default function StoryEdit({ storyId }: Props) {
                         </div>
                     </div>
                 </div>
+
+                {/* Share Modal */}
+                {showShareModal && (
+                    <ShareStoryModal
+                        storyId={storyId}
+                        storyTitle={story.title}
+                        onClose={() => setShowShareModal(false)}
+                    />
+                )}
 
                 {/* Add Frame Modal */}
                 {showFrameModal && (

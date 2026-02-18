@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { ShareStoryModal } from '@/components/share-story-modal';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth, BreadcrumbItem, Story } from '@/types';
 
@@ -12,6 +13,7 @@ export default function Dashboard() {
     const user = auth.user;
     const [stories, setStories] = useState<Story[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [sharingStory, setSharingStory] = useState<Story | null>(null);
 
     useEffect(() => {
         fetch('/api/stories', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -107,12 +109,15 @@ export default function Dashboard() {
                                     <span>🎞 {story.frame_count} frames</span>
                                     <span>👁 {story.view_count} views</span>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => router.visit(`/story/${story.id}/edit`)} className="flex-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => router.visit(`/story/${story.id}/edit`)} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
                                         Edit
                                     </button>
                                     <button onClick={() => router.visit(`/story/${story.id}/view`)} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
                                         {story.is_published ? 'View' : 'Preview'}
+                                    </button>
+                                    <button onClick={() => setSharingStory(story)} className="rounded-lg border border-primary/40 px-3 py-1.5 text-sm text-primary hover:bg-primary/5 transition-colors">
+                                        Share
                                     </button>
                                     <button onClick={() => void deleteStory(story.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors">
                                         Delete
@@ -123,6 +128,14 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {sharingStory && (
+                <ShareStoryModal
+                    storyId={sharingStory.id}
+                    storyTitle={sharingStory.title}
+                    onClose={() => setSharingStory(null)}
+                />
+            )}
         </AppLayout>
     );
 }

@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { ShareStoryModal } from '@/components/share-story-modal';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth, BreadcrumbItem, Frame, Story } from '@/types';
 
@@ -45,6 +46,7 @@ export default function StoryShow() {
 
     const currentFrame = frames[currentIndex];
     const isOwner = story ? auth.user.id === story.user_id : false;
+    const [showShareModal, setShowShareModal] = useState(false);
 
     if (!story) {
         return (
@@ -67,9 +69,17 @@ export default function StoryShow() {
                         {story.description && <p className="mt-1 text-muted-foreground">{story.description}</p>}
                     </div>
                     {isOwner && (
-                        <a href={`/story/${story.id}/edit`} className="rounded-md border px-4 py-2 hover:bg-accent">
-                            Edit
-                        </a>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowShareModal(true)}
+                                className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity"
+                            >
+                                Share
+                            </button>
+                            <a href={`/story/${story.id}/edit`} className="rounded-lg border px-4 py-2 text-sm hover:bg-accent transition-colors">
+                                Edit
+                            </a>
+                        </div>
                     )}
                 </div>
 
@@ -142,6 +152,14 @@ export default function StoryShow() {
                     </div>
                 )}
             </div>
+
+            {showShareModal && (
+                <ShareStoryModal
+                    storyId={story.id}
+                    storyTitle={story.title}
+                    onClose={() => setShowShareModal(false)}
+                />
+            )}
         </AppLayout>
     );
 }
