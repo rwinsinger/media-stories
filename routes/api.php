@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // Admin routes
     Route::middleware('admin')->prefix('admin')->group(function (): void {
         Route::get('/users', [AdminUserController::class, 'index']);
+        Route::get('/users/{user}', [AdminUserController::class, 'show']);
         Route::put('/users/{user}', [AdminUserController::class, 'update']);
         Route::get('/analytics', [AnalyticsController::class, 'index']);
         Route::get('/logs', [LogController::class, 'index']);

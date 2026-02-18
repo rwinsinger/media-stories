@@ -19,6 +19,7 @@ export function ShareStoryModal({ storyId, storyTitle, onClose }: Props) {
     const [message, setMessage] = useState('');
     const [isSharing, setIsSharing] = useState(false);
     const [shareLink, setShareLink] = useState<string | null>(null);
+    const [expiresInDays, setExpiresInDays] = useState(3);
     const [isGeneratingLink, setIsGeneratingLink] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -92,7 +93,7 @@ export function ShareStoryModal({ storyId, storyTitle, onClose }: Props) {
             const r = await fetch('/api/share-links', {
                 method: 'POST',
                 headers: jsonHeaders,
-                body: JSON.stringify({ story_id: storyId }),
+                body: JSON.stringify({ story_id: storyId, expires_in_days: expiresInDays }),
             });
             const data = await r.json() as { url?: string };
             if (r.ok && data.url) {
@@ -257,8 +258,22 @@ export function ShareStoryModal({ storyId, storyTitle, onClose }: Props) {
                     ) : (
                         <div className="space-y-4">
                             <p className="text-sm text-muted-foreground">
-                                Generate a public link anyone can use to view this story. Links expire after 72 hours.
+                                Generate a public link anyone can use to view this story.
                             </p>
+
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">Link expires after</label>
+                                <select
+                                    value={expiresInDays}
+                                    onChange={(e) => setExpiresInDays(Number(e.target.value))}
+                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value={1}>1 day</option>
+                                    <option value={3}>3 days</option>
+                                    <option value={7}>7 days</option>
+                                    <option value={30}>30 days</option>
+                                </select>
+                            </div>
 
                             {shareLink ? (
                                 <div className="space-y-3">

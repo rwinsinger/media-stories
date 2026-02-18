@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::middleware('admin')->prefix('admin')->group(function (): void {
         Route::get('/', fn () => Inertia::render('admin/analytics'))->name('admin.index');
         Route::get('users', fn () => Inertia::render('admin/users'))->name('admin.users');
+        Route::get('users/{user}', fn ($user) => Inertia::render('admin/users/show', ['userId' => $user]))->name('admin.users.show');
         Route::get('analytics', fn () => Inertia::render('admin/analytics'))->name('admin.analytics');
         Route::get('logs', fn () => Inertia::render('admin/logs'))->name('admin.logs');
         Route::get('features', fn () => Inertia::render('admin/features'))->name('admin.features');

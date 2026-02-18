@@ -102,12 +102,20 @@ export default function AdminUsers() {
                                             )}
                                         </td>
                                         <td className="px-4 py-2">
-                                            <button
-                                                onClick={() => void suspend(user.id, user.is_suspended)}
-                                                className="rounded border px-2 py-1 text-xs hover:bg-accent"
-                                            >
-                                                {user.is_suspended ? 'Unsuspend' : 'Suspend'}
-                                            </button>
+                                            <div className="flex gap-1">
+                                                <a
+                                                    href={`/admin/users/${user.id}`}
+                                                    className="rounded border px-2 py-1 text-xs hover:bg-accent"
+                                                >
+                                                    View
+                                                </a>
+                                                <button
+                                                    onClick={() => void suspend(user.id, user.is_suspended)}
+                                                    className="rounded border px-2 py-1 text-xs hover:bg-accent"
+                                                >
+                                                    {user.is_suspended ? 'Unsuspend' : 'Suspend'}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

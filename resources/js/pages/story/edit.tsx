@@ -1,3 +1,6 @@
+import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { ShareStoryModal } from '@/components/share-story-modal';
@@ -13,14 +16,65 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit Story', href: '#' },
 ];
 
+function SortableFrame({ frame, index, onDelete }: { frame: Frame; index: number; onDelete: (id: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: frame.id });
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/40"
+        >
+            {/* Drag handle */}
+            <button
+                {...attributes}
+                {...listeners}
+                className="shrink-0 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                aria-label="Drag to reorder"
+            >
+                ⠿
+            </button>
+
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">
+                {index + 1}
+            </span>
+
+            {frame.media_type === 'image' ? (
+                <img src={frame.media_url} alt="" className="h-12 w-16 rounded-md object-cover" />
+            ) : (
+                <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted text-xs">▶ Video</div>
+            )}
+
+            <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-medium">{frame.text_content || `Frame ${index + 1}`}</p>
+                <p className="text-xs text-muted-foreground">{frame.duration / 1000}s · {frame.media_type}</p>
+            </div>
+
+            <button
+                onClick={() => onDelete(frame.id)}
+                className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
+            >
+                Delete
+            </button>
+        </div>
+    );
+}
+
 export default function StoryEdit({ storyId }: Props) {
     const [story, setStory] = useState<Story | null>(null);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [isPublished, setIsPublished] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [frames, setFrames] = useState<Frame[]>([]);
     const [showFrameModal, setShowFrameModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
     useEffect(() => {
         fetch(`/api/stories/${storyId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -30,6 +84,7 @@ export default function StoryEdit({ storyId }: Props) {
                 setTitle(data.title);
                 setDescription(data.description ?? '');
                 setIsPublished(data.is_published);
+                setFrames(Array.isArray(data.frames) ? data.frames : []);
             });
     }, [storyId]);
 
@@ -56,7 +111,29 @@ export default function StoryEdit({ storyId }: Props) {
 
     const deleteFrame = async (frameId: string) => {
         await fetch(`/api/frames/${frameId}`, { method: 'DELETE', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        setStory((prev) => prev ? { ...prev, frames: prev.frames?.filter((f) => f.id !== frameId) } : prev);
+        setFrames((prev) => prev.filter((f) => f.id !== frameId));
+        setStory((prev) => prev ? { ...prev, frame_count: prev.frame_count - 1 } : prev);
+    };
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = frames.findIndex((f) => f.id === active.id);
+        const newIndex = frames.findIndex((f) => f.id === over.id);
+        const reordered = arrayMove(frames, oldIndex, newIndex);
+        setFrames(reordered);
+
+        // Persist new order_index for each moved frame
+        await Promise.all(
+            reordered.map((frame, idx) =>
+                fetch(`/api/frames/${frame.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ order_index: idx }),
+                }),
+            ),
+        );
     };
 
     if (!story) {
@@ -66,8 +143,6 @@ export default function StoryEdit({ storyId }: Props) {
             </AppLayout>
         );
     }
-
-    const frames = story.frames ?? [];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -122,7 +197,7 @@ export default function StoryEdit({ storyId }: Props) {
                             </div>
                         </div>
 
-                        {/* Frames list */}
+                        {/* Frames list with drag-and-drop */}
                         <div className="rounded-xl border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="font-semibold">Frames ({frames.length}/100)</h2>
@@ -139,28 +214,23 @@ export default function StoryEdit({ storyId }: Props) {
                                     <p className="text-muted-foreground">No frames yet. Add your first frame to build your story.</p>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {frames.map((frame, i) => (
-                                        <div key={frame.id} className="flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/40">
-                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">{i + 1}</span>
-                                            {frame.media_type === 'image' ? (
-                                                <img src={frame.media_url} alt="" className="h-12 w-16 rounded-md object-cover" />
-                                            ) : (
-                                                <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted text-xs">▶ Video</div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="truncate text-sm font-medium">{frame.text_content || `Frame ${i + 1}`}</p>
-                                                <p className="text-xs text-muted-foreground">{frame.duration / 1000}s · {frame.media_type}</p>
+                                <>
+                                    <p className="mb-2 text-xs text-muted-foreground">Drag frames to reorder</p>
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
+                                        <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                                            <div className="space-y-2">
+                                                {frames.map((frame, i) => (
+                                                    <SortableFrame
+                                                        key={frame.id}
+                                                        frame={frame}
+                                                        index={i}
+                                                        onDelete={(id) => void deleteFrame(id)}
+                                                    />
+                                                ))}
                                             </div>
-                                            <button
-                                                onClick={() => void deleteFrame(frame.id)}
-                                                className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                                        </SortableContext>
+                                    </DndContext>
+                                </>
                             )}
                         </div>
                     </div>
@@ -225,7 +295,8 @@ export default function StoryEdit({ storyId }: Props) {
                         orderIndex={frames.length}
                         onClose={() => setShowFrameModal(false)}
                         onAdded={(frame) => {
-                            setStory((prev) => prev ? { ...prev, frames: [...(prev.frames ?? []), frame], frame_count: prev.frame_count + 1 } : prev);
+                            setFrames((prev) => [...prev, frame]);
+                            setStory((prev) => prev ? { ...prev, frame_count: prev.frame_count + 1 } : prev);
                             setShowFrameModal(false);
                         }}
                     />
@@ -241,7 +312,9 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
     const [textContent, setTextContent] = useState('');
     const [duration, setDuration] = useState(5000);
+    const [audioUrl, setAudioUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [isAudioUploading, setIsAudioUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -250,7 +323,6 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Set media type from file
         const isVideo = file.type.startsWith('video/');
         setMediaType(isVideo ? 'video' : 'image');
         setPreview(URL.createObjectURL(file));
@@ -281,6 +353,29 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
         }
     };
 
+    const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsAudioUploading(true);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const r = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData,
+            });
+            const data = await r.json() as { url?: string };
+            if (r.ok && data.url) {
+                setAudioUrl(data.url);
+            }
+        } finally {
+            setIsAudioUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -288,7 +383,14 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
             const r = await fetch(`/api/stories/${storyId}/frames`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ media_type: mediaType, media_url: mediaUrl, text_content: textContent, duration, order_index: orderIndex }),
+                body: JSON.stringify({
+                    media_type: mediaType,
+                    media_url: mediaUrl,
+                    text_content: textContent || undefined,
+                    duration,
+                    order_index: orderIndex,
+                    audio_url: audioUrl || undefined,
+                }),
             });
             if (r.ok) {
                 onAdded(await r.json());
@@ -371,6 +473,20 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
                         <label className="mb-1 block text-sm font-medium">Text Overlay (optional)</label>
                         <textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} maxLength={500} rows={2} className="w-full rounded-md border px-3 py-2 text-sm" />
                     </div>
+
+                    {/* Audio upload */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">Background Audio (optional)</label>
+                        <input
+                            type="file"
+                            accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg"
+                            onChange={(e) => void handleAudioChange(e)}
+                            className="w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:text-primary-foreground"
+                        />
+                        {isAudioUploading && <p className="mt-1 text-xs text-muted-foreground">Uploading audio...</p>}
+                        {audioUrl && <p className="mt-1 text-xs text-emerald-600">Audio uploaded ✓</p>}
+                    </div>
+
                     <div>
                         <label className="mb-1 block text-sm font-medium">Duration: {duration / 1000}s</label>
                         <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />

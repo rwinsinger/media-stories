@@ -21,13 +21,32 @@ class AnalyticsController extends Controller
         $tierBreakdown = User::query()
             ->select('subscription_tier', DB::raw('count(*) as count'))
             ->groupBy('subscription_tier')
-            ->pluck('count', 'subscription_tier');
+            ->get()
+            ->map(fn ($row) => ['name' => ucfirst($row->subscription_tier), 'value' => $row->count]);
+
+        $userGrowth = User::query()
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => ['date' => $row->date, 'users' => $row->count]);
+
+        $storyGrowth = Story::query()
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => ['date' => $row->date, 'stories' => $row->count]);
 
         return response()->json([
             'total_users' => $totalUsers,
             'total_stories' => $totalStories,
             'active_users_today' => $activeUsersToday,
             'tier_breakdown' => $tierBreakdown,
+            'user_growth' => $userGrowth,
+            'story_growth' => $storyGrowth,
         ]);
     }
 }

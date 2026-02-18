@@ -13,6 +13,19 @@ class UserController extends Controller
 {
     public function __construct(private readonly ActivityLogService $activityLog) {}
 
+    public function show(User $user): JsonResponse
+    {
+        $user->load(['activityLogs' => function ($query): void {
+            $query->orderByDesc('created_at')->limit(50);
+        }]);
+
+        return response()->json([
+            'user' => $user,
+            'story_count' => $user->stories()->count(),
+            'activity_logs' => $user->activityLogs,
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $users = User::query()
