@@ -16,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit Story', href: '#' },
 ];
 
-function SortableFrame({ frame, index, onDelete }: { frame: Frame; index: number; onDelete: (id: string) => void }) {
+function SortableFrame({ frame, index, onEdit, onDelete }: { frame: Frame; index: number; onEdit: (frame: Frame) => void; onDelete: (id: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: frame.id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
@@ -51,12 +51,20 @@ function SortableFrame({ frame, index, onDelete }: { frame: Frame; index: number
                 <p className="text-xs text-muted-foreground">{frame.duration / 1000}s · {frame.media_type}</p>
             </div>
 
-            <button
-                onClick={() => onDelete(frame.id)}
-                className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
-            >
-                Delete
-            </button>
+            <div className="flex gap-1">
+                <button
+                    onClick={() => onEdit(frame)}
+                    className="rounded-lg border px-2 py-1 text-xs hover:bg-accent transition-colors"
+                >
+                    Edit
+                </button>
+                <button
+                    onClick={() => onDelete(frame.id)}
+                    className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                    Delete
+                </button>
+            </div>
         </div>
     );
 }
@@ -69,6 +77,7 @@ export default function StoryEdit({ storyId }: Props) {
     const [isSaving, setIsSaving] = useState(false);
     const [frames, setFrames] = useState<Frame[]>([]);
     const [showFrameModal, setShowFrameModal] = useState(false);
+    const [editingFrame, setEditingFrame] = useState<Frame | null>(null);
     const [showShareModal, setShowShareModal] = useState(false);
 
     const sensors = useSensors(
@@ -224,6 +233,7 @@ export default function StoryEdit({ storyId }: Props) {
                                                         key={frame.id}
                                                         frame={frame}
                                                         index={i}
+                                                        onEdit={setEditingFrame}
                                                         onDelete={(id) => void deleteFrame(id)}
                                                     />
                                                 ))}
@@ -288,6 +298,18 @@ export default function StoryEdit({ storyId }: Props) {
                     />
                 )}
 
+                {/* Edit Frame Modal */}
+                {editingFrame && (
+                    <EditFrameModal
+                        frame={editingFrame}
+                        onClose={() => setEditingFrame(null)}
+                        onSaved={(updated) => {
+                            setFrames((prev) => prev.map((f) => f.id === updated.id ? updated : f));
+                            setEditingFrame(null);
+                        }}
+                    />
+                )}
+
                 {/* Add Frame Modal */}
                 {showFrameModal && (
                     <AddFrameModal
@@ -303,6 +325,104 @@ export default function StoryEdit({ storyId }: Props) {
                 )}
             </div>
         </AppLayout>
+    );
+}
+
+function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: () => void; onSaved: (frame: Frame) => void }) {
+    const [textContent, setTextContent] = useState(frame.text_content ?? '');
+    const [duration, setDuration] = useState(frame.duration);
+    const [audioUrl, setAudioUrl] = useState(frame.audio_url ?? '');
+    const [isAudioUploading, setIsAudioUploading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsAudioUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const r = await fetch('/api/upload', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+            const data = await r.json() as { url?: string };
+            if (r.ok && data.url) { setAudioUrl(data.url); }
+        } finally {
+            setIsAudioUploading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            const r = await fetch(`/api/frames/${frame.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({
+                    text_content: textContent || null,
+                    duration,
+                    audio_url: audioUrl || null,
+                }),
+            });
+            if (r.ok) { onSaved(await r.json()); }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl shadow-violet-500/10">
+                <h2 className="mb-4 text-lg font-semibold">Edit Frame</h2>
+
+                {/* Preview */}
+                <div className="mb-4 overflow-hidden rounded-lg bg-black aspect-video">
+                    {frame.media_type === 'image' ? (
+                        <img src={frame.media_url} alt="" className="h-full w-full object-contain" />
+                    ) : (
+                        <video src={frame.media_url} className="h-full w-full" controls />
+                    )}
+                </div>
+
+                <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">Caption / Text</label>
+                        <textarea
+                            value={textContent}
+                            onChange={(e) => setTextContent(e.target.value)}
+                            maxLength={500}
+                            rows={3}
+                            placeholder="Add a caption or description shown below the image..."
+                            className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">{textContent.length}/500</p>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">Duration: {duration / 1000}s</label>
+                        <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">Background Audio (optional)</label>
+                        <input
+                            type="file"
+                            accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg"
+                            onChange={(e) => void handleAudioChange(e)}
+                            className="w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:text-primary-foreground"
+                        />
+                        {isAudioUploading && <p className="mt-1 text-xs text-muted-foreground">Uploading audio...</p>}
+                        {audioUrl && <p className="mt-1 text-xs text-emerald-600">Audio attached ✓</p>}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button type="submit" disabled={isSaving} className="flex-1 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50">
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm hover:bg-accent transition-colors">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }
 

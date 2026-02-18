@@ -17,7 +17,6 @@ export default function StoryShow() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
-    const [showOverlay, setShowOverlay] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
     const viewerRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef<number | null>(null);
@@ -176,17 +175,19 @@ export default function StoryShow() {
                                     muted={isMuted}
                                 />
                             )}
-                            {currentFrame?.text_content && showOverlay && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-4 text-white">
-                                    {currentFrame.text_content}
-                                </div>
-                            )}
 
                             {/* Frame index badge */}
                             <div className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white">
                                 {currentIndex + 1} / {frames.length}
                             </div>
                         </div>
+
+                        {/* Caption */}
+                        {currentFrame?.text_content && (
+                            <div className="rounded-lg border bg-card px-4 py-3 text-sm leading-relaxed">
+                                {currentFrame.text_content}
+                            </div>
+                        )}
 
                         {/* Controls */}
                         <div className="flex items-center justify-center gap-2">
@@ -222,17 +223,6 @@ export default function StoryShow() {
                                     title="Toggle mute"
                                 >
                                     {isMuted ? '🔇' : '🔊'}
-                                </button>
-                            )}
-
-                            {/* Text overlay toggle — only when text exists */}
-                            {currentFrame?.text_content && (
-                                <button
-                                    onClick={() => setShowOverlay((s) => !s)}
-                                    className={`rounded-lg border px-3 py-2 transition-colors ${showOverlay ? 'bg-accent' : 'hover:bg-accent'}`}
-                                    title="Toggle text overlay"
-                                >
-                                    💬
                                 </button>
                             )}
 
