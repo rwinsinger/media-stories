@@ -75,7 +75,7 @@ export default function StoryEdit({ storyId }: Props) {
                     {/* Main content */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Story details form */}
-                        <div className="rounded-lg border p-4">
+                        <div className="rounded-xl border bg-card p-5 shadow-sm">
                             <h2 className="mb-4 font-semibold">Story Details</h2>
                             <div className="space-y-4">
                                 <div>
@@ -85,7 +85,7 @@ export default function StoryEdit({ storyId }: Props) {
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
                                         maxLength={100}
-                                        className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full rounded-lg border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                     <p className="mt-1 text-xs text-muted-foreground">{title.length}/100</p>
                                 </div>
@@ -96,7 +96,7 @@ export default function StoryEdit({ storyId }: Props) {
                                         onChange={(e) => setDescription(e.target.value)}
                                         maxLength={500}
                                         rows={3}
-                                        className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full rounded-lg border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                     <p className="mt-1 text-xs text-muted-foreground">{description.length}/500</p>
                                 </div>
@@ -106,13 +106,14 @@ export default function StoryEdit({ storyId }: Props) {
                                         id="published"
                                         checked={isPublished}
                                         onChange={(e) => setIsPublished(e.target.checked)}
+                                        className="accent-primary"
                                     />
                                     <label htmlFor="published" className="text-sm font-medium">Published</label>
                                 </div>
                                 <button
                                     onClick={() => void saveStory()}
                                     disabled={isSaving}
-                                    className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+                                    className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-5 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
                                     {isSaving ? 'Saving...' : 'Save Changes'}
                                 </button>
@@ -120,38 +121,38 @@ export default function StoryEdit({ storyId }: Props) {
                         </div>
 
                         {/* Frames list */}
-                        <div className="rounded-lg border p-4">
+                        <div className="rounded-xl border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="font-semibold">Frames ({frames.length}/100)</h2>
                                 <button
                                     onClick={() => setShowFrameModal(true)}
                                     disabled={frames.length >= 100}
-                                    className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+                                    className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
                                     + Add Frame
                                 </button>
                             </div>
                             {frames.length === 0 ? (
-                                <div className="rounded-lg border border-dashed py-8 text-center">
+                                <div className="rounded-lg border border-dashed border-primary/30 py-8 text-center">
                                     <p className="text-muted-foreground">No frames yet. Add your first frame to build your story.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
                                     {frames.map((frame, i) => (
-                                        <div key={frame.id} className="flex items-center gap-3 rounded-lg border p-3">
-                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted text-sm font-medium">{i + 1}</span>
+                                        <div key={frame.id} className="flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/40">
+                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">{i + 1}</span>
                                             {frame.media_type === 'image' ? (
-                                                <img src={frame.media_url} alt="" className="h-12 w-16 rounded object-cover" />
+                                                <img src={frame.media_url} alt="" className="h-12 w-16 rounded-md object-cover" />
                                             ) : (
-                                                <div className="flex h-12 w-16 items-center justify-center rounded bg-muted text-xs">Video</div>
+                                                <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted text-xs">▶ Video</div>
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="truncate text-sm">{frame.text_content || `Frame ${i + 1}`}</p>
+                                                <p className="truncate text-sm font-medium">{frame.text_content || `Frame ${i + 1}`}</p>
                                                 <p className="text-xs text-muted-foreground">{frame.duration / 1000}s · {frame.media_type}</p>
                                             </div>
                                             <button
                                                 onClick={() => void deleteFrame(frame.id)}
-                                                className="rounded border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                                className="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
                                             >
                                                 Delete
                                             </button>
@@ -164,35 +165,35 @@ export default function StoryEdit({ storyId }: Props) {
 
                     {/* Sidebar */}
                     <div className="space-y-4">
-                        <div className="rounded-lg border p-4">
+                        <div className="rounded-xl border bg-card p-5 shadow-sm">
                             <h2 className="mb-3 font-semibold">Story Info</h2>
                             <dl className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Frames</dt>
-                                    <dd>{story.frame_count}</dd>
+                                    <dd className="font-medium">{story.frame_count}</dd>
                                 </div>
                                 <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Views</dt>
-                                    <dd>{story.view_count}</dd>
+                                    <dd className="font-medium">{story.view_count}</dd>
                                 </div>
                                 <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Created</dt>
-                                    <dd>{new Date(story.created_at).toLocaleDateString()}</dd>
+                                    <dd className="font-medium">{new Date(story.created_at).toLocaleDateString()}</dd>
                                 </div>
                             </dl>
                         </div>
 
-                        <div className="rounded-lg border p-4 space-y-2">
+                        <div className="rounded-xl border bg-card p-5 shadow-sm space-y-2">
                             <h2 className="mb-3 font-semibold">Actions</h2>
                             <button
                                 onClick={() => router.visit(`/story/${story.id}/view`)}
-                                className="w-full rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                                className="w-full rounded-lg border border-primary/30 px-4 py-2 text-sm font-medium text-primary hover:bg-accent transition-colors"
                             >
                                 {story.is_published ? 'View Story' : 'Preview Draft'}
                             </button>
                             <button
                                 onClick={() => void deleteStory()}
-                                className="w-full rounded-md border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                className="w-full rounded-lg border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
                             >
                                 Delete Story
                             </button>
@@ -283,8 +284,8 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
     const canSubmit = mediaUrl && !isUploading && !isSubmitting;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl shadow-violet-500/10 max-h-[90vh] overflow-y-auto">
                 <h2 className="mb-4 text-lg font-semibold">Add Frame</h2>
                 <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
 
@@ -358,10 +359,10 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
                         <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
                     </div>
                     <div className="flex gap-2">
-                        <button type="submit" disabled={!canSubmit} className="flex-1 rounded-md bg-primary py-2 text-sm text-primary-foreground disabled:opacity-50">
+                        <button type="submit" disabled={!canSubmit} className="flex-1 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50">
                             {isSubmitting ? 'Adding...' : isUploading ? 'Uploading...' : 'Add Frame'}
                         </button>
-                        <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
+                        <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm hover:bg-accent transition-colors">Cancel</button>
                     </div>
                 </form>
             </div>

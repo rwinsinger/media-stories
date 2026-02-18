@@ -94,25 +94,25 @@ export default function StoryShow() {
                             )}
                         </div>
 
-                        {/* Controls */}
+                                        {/* Controls */}
                         <div className="flex items-center justify-center gap-4">
                             <button
                                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                                 disabled={currentIndex === 0}
-                                className="rounded-md border px-4 py-2 disabled:opacity-50"
+                                className="rounded-lg border px-4 py-2 hover:bg-accent transition-colors disabled:opacity-50"
                             >
                                 ← Prev
                             </button>
                             <button
                                 onClick={() => setIsPlaying((p) => !p)}
-                                className="rounded-md bg-primary px-6 py-2 text-primary-foreground"
+                                className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-8 py-2 font-medium text-white shadow-md shadow-violet-500/20 hover:opacity-90 transition-opacity"
                             >
                                 {isPlaying ? 'Pause' : 'Play'}
                             </button>
                             <button
                                 onClick={() => setCurrentIndex((i) => Math.min(frames.length - 1, i + 1))}
                                 disabled={currentIndex === frames.length - 1}
-                                className="rounded-md border px-4 py-2 disabled:opacity-50"
+                                className="rounded-lg border px-4 py-2 hover:bg-accent transition-colors disabled:opacity-50"
                             >
                                 Next →
                             </button>

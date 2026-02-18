@@ -50,7 +50,7 @@ export default function Dashboard() {
                         <button
                             onClick={() => !atLimit && router.visit('/story/new')}
                             disabled={atLimit}
-                            className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             + New Story
                         </button>
@@ -60,12 +60,15 @@ export default function Dashboard() {
                 {/* Stats */}
                 <div className="mb-6 grid gap-4 md:grid-cols-3">
                     {[
-                        { label: 'Total Stories', value: user.story_count },
-                        { label: 'Published', value: publishedCount },
-                        { label: 'Total Views', value: totalViews },
+                        { label: 'Total Stories', value: user.story_count, gradient: 'from-violet-500 to-violet-600' },
+                        { label: 'Published', value: publishedCount, gradient: 'from-pink-500 to-rose-500' },
+                        { label: 'Total Views', value: totalViews, gradient: 'from-indigo-500 to-violet-500' },
                     ].map((stat) => (
-                        <div key={stat.label} className="rounded-lg border p-4">
-                            <p className="text-sm text-muted-foreground">{stat.label}</p>
+                        <div key={stat.label} className="rounded-xl border bg-card p-5 shadow-sm">
+                            <div className={`mb-3 inline-flex rounded-lg bg-gradient-to-br ${stat.gradient} p-2.5`}>
+                                <span className="text-white text-lg">🎞</span>
+                            </div>
+                            <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                             <p className="text-3xl font-bold">{stat.value.toLocaleString()}</p>
                         </div>
                     ))}
@@ -75,25 +78,25 @@ export default function Dashboard() {
                 {isLoading ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="h-48 animate-pulse rounded-lg border bg-muted" />
+                            <div key={i} className="h-48 animate-pulse rounded-xl border bg-muted" />
                         ))}
                     </div>
                 ) : stories.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
-                        <p className="text-4xl mb-3">📖</p>
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-primary/30 bg-card py-16 text-center">
+                        <p className="text-5xl mb-3">📖</p>
                         <h3 className="font-semibold text-lg mb-1">No stories yet</h3>
                         <p className="text-muted-foreground mb-4">Create your first story to get started</p>
-                        <button onClick={() => router.visit('/story/new')} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
+                        <button onClick={() => router.visit('/story/new')} className="rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 px-5 py-2 text-sm font-medium text-white shadow-md shadow-violet-500/20 hover:opacity-90 transition-opacity">
                             Create Story
                         </button>
                     </div>
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {stories.map((story) => (
-                            <div key={story.id} className="group rounded-lg border p-4 transition-shadow hover:shadow-md">
+                            <div key={story.id} className="group rounded-xl border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/40">
                                 <div className="flex items-start justify-between mb-2">
                                     <h3 className="font-semibold line-clamp-1">{story.title}</h3>
-                                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs ${story.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${story.is_published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
                                         {story.is_published ? 'Published' : 'Draft'}
                                     </span>
                                 </div>
@@ -105,13 +108,13 @@ export default function Dashboard() {
                                     <span>👁 {story.view_count} views</span>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => router.visit(`/story/${story.id}/edit`)} className="flex-1 rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
+                                    <button onClick={() => router.visit(`/story/${story.id}/edit`)} className="flex-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
                                         Edit
                                     </button>
-                                    <button onClick={() => router.visit(`/story/${story.id}/view`)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
+                                    <button onClick={() => router.visit(`/story/${story.id}/view`)} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
                                         {story.is_published ? 'View' : 'Preview'}
                                     </button>
-                                    <button onClick={() => void deleteStory(story.id)} className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+                                    <button onClick={() => void deleteStory(story.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors">
                                         Delete
                                     </button>
                                 </div>
