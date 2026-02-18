@@ -12,7 +12,7 @@ export function useStories() {
         setIsLoading(true);
         fetch('/api/stories', { headers })
             .then((r) => r.json())
-            .then((data) => { setStories(data); setIsLoading(false); })
+            .then((data) => { setStories(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => { setError('Failed to load stories'); setIsLoading(false); });
     };
 

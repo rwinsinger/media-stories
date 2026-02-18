@@ -16,7 +16,7 @@ export default function AdminFeatures() {
     useEffect(() => {
         fetch('/api/admin/features', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then((r) => r.json())
-            .then((data) => { setFlags(data); setIsLoading(false); })
+            .then((data) => { setFlags(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     }, []);
 

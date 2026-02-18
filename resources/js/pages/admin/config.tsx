@@ -17,7 +17,7 @@ export default function AdminConfig() {
     useEffect(() => {
         fetch('/api/admin/config', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then((r) => r.json())
-            .then((data) => { setConfigs(data); setIsLoading(false); })
+            .then((data) => { setConfigs(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     }, []);
 

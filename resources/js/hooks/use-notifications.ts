@@ -10,7 +10,7 @@ export function useNotifications() {
     const fetchNotifications = () => {
         fetch('/api/notifications', { headers })
             .then((r) => r.json())
-            .then((data) => { setNotifications(data); setIsLoading(false); })
+            .then((data) => { setNotifications(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     };
 

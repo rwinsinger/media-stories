@@ -10,16 +10,23 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function (): void {
+            Route::middleware('web')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->validateCsrfTokens(except: ['api/*']);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
@@ -29,12 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            AddSecurityHeaders::class,
-            TrackLastLogin::class,
-            CheckSuspended::class,
-        ]);
-
-        $middleware->api(append: [
             AddSecurityHeaders::class,
             TrackLastLogin::class,
             CheckSuspended::class,

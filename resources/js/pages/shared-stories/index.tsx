@@ -15,7 +15,7 @@ export default function SharedStoriesIndex() {
     useEffect(() => {
         fetch('/api/story-shares', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then((r) => r.json())
-            .then((data) => { setShares(data); setIsLoading(false); })
+            .then((data) => { setShares(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     }, []);
 

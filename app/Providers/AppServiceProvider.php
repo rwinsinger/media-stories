@@ -6,10 +6,12 @@ use App\Models\Frame;
 use App\Models\User;
 use App\Observers\FrameObserver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
         $this->configureGate();
         $this->configureObservers();
         $this->configureRateLimiters();
+
+        if (app()->isLocal()) {
+            Event::listen(Registered::class, function (Registered $event): void {
+                $event->user->markEmailAsVerified();
+            });
+        }
     }
 
     protected function configureDefaults(): void

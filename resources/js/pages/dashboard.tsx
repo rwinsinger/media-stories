@@ -16,7 +16,7 @@ export default function Dashboard() {
     useEffect(() => {
         fetch('/api/stories', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then((r) => r.json())
-            .then((data) => { setStories(data); setIsLoading(false); })
+            .then((data) => { setStories(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     }, []);
 

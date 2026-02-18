@@ -10,7 +10,7 @@ export function useFriends() {
     const fetchFriends = () => {
         fetch('/api/friends', { headers })
             .then((r) => r.json())
-            .then((data) => { setFriends(data); setIsLoading(false); })
+            .then((data) => { setFriends(Array.isArray(data) ? data : []); setIsLoading(false); })
             .catch(() => setIsLoading(false));
     };
 
