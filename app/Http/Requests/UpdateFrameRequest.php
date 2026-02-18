@@ -19,7 +19,7 @@ class UpdateFrameRequest extends FormRequest
             'text_content' => ['nullable', 'string', 'max:1000'],
             'thumbnail_url' => ['nullable', 'string', 'max:1000'],
             'audio_url' => ['nullable', 'string', 'max:1000'],
-            'duration' => ['sometimes', 'integer', 'min:1000', 'max:30000'],
+            'duration' => ['sometimes', 'integer', 'min:1000', 'max:3600000'],
             'order_index' => ['integer', 'min:0'],
         ];
     }

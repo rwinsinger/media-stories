@@ -17,7 +17,7 @@ class StoreFrameRequest extends FormRequest
             'media_type' => ['required', 'in:image,video,audio'],
             'media_url' => ['required', 'string', 'max:1000'],
             'caption' => ['nullable', 'string', 'max:500'],
-            'duration' => ['integer', 'min:1000', 'max:30000'],
+            'duration' => ['integer', 'min:1000', 'max:3600000'],
             'order_index' => ['integer', 'min:0'],
         ];
     }

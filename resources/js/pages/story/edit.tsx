@@ -16,6 +16,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit Story', href: '#' },
 ];
 
+/** Reads duration from a local file via a hidden media element. Returns ms, or null if unavailable. */
+function getMediaDurationMs(objectUrl: string, tag: 'video' | 'audio'): Promise<number | null> {
+    return new Promise((resolve) => {
+        const el = document.createElement(tag);
+        el.preload = 'metadata';
+        el.onloadedmetadata = () => resolve(isFinite(el.duration) && el.duration > 0 ? Math.round(el.duration * 1000) : null);
+        el.onerror = () => resolve(null);
+        el.src = objectUrl;
+    });
+}
+
+function formatDuration(ms: number): string {
+    const s = Math.round(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}:${rem.toString().padStart(2, '0')}`;
+}
+
 function SortableFrame({ frame, index, onEdit, onDelete }: { frame: Frame; index: number; onEdit: (frame: Frame) => void; onDelete: (id: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: frame.id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
@@ -334,6 +353,7 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
     const [previewUrl, setPreviewUrl] = useState(frame.media_url);
     const [textContent, setTextContent] = useState(frame.text_content ?? '');
     const [duration, setDuration] = useState(frame.duration);
+    const [sliderMax, setSliderMax] = useState(Math.max(30000, frame.duration));
     const [audioUrl, setAudioUrl] = useState(frame.audio_url ?? '');
     const [inputMode, setInputMode] = useState<'file' | 'url'>('file');
     const [isUploading, setIsUploading] = useState(false);
@@ -346,9 +366,18 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
         if (!file) return;
         const isVideo = file.type.startsWith('video/');
         setMediaType(isVideo ? 'video' : 'image');
-        setPreviewUrl(URL.createObjectURL(file));
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
         setUploadError(null);
-        setIsUploading(true);
+
+        if (isVideo) {
+            const detected = await getMediaDurationMs(objectUrl, 'video');
+            if (detected) {
+                setDuration(detected);
+                setSliderMax((prev) => Math.max(prev, detected));
+            }
+        }
+
         const formData = new FormData();
         formData.append('file', file);
         try {
@@ -371,6 +400,12 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
     const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        const detected = await getMediaDurationMs(objectUrl, 'audio');
+        if (detected) {
+            setDuration(detected);
+            setSliderMax((prev) => Math.max(prev, detected));
+        }
         setIsAudioUploading(true);
         const formData = new FormData();
         formData.append('file', file);
@@ -485,8 +520,8 @@ function EditFrameModal({ frame, onClose, onSaved }: { frame: Frame; onClose: ()
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium">Duration: {duration / 1000}s</label>
-                        <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
+                        <label className="mb-1 block text-sm font-medium">Duration: {formatDuration(duration)}</label>
+                        <input type="range" min="1000" max={sliderMax} step="1000" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
                     </div>
 
                     <div>
@@ -519,6 +554,7 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
     const [textContent, setTextContent] = useState('');
     const [duration, setDuration] = useState(5000);
+    const [sliderMax, setSliderMax] = useState(30000);
     const [audioUrl, setAudioUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [isAudioUploading, setIsAudioUploading] = useState(false);
@@ -532,8 +568,18 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
 
         const isVideo = file.type.startsWith('video/');
         setMediaType(isVideo ? 'video' : 'image');
-        setPreview(URL.createObjectURL(file));
+        const objectUrl = URL.createObjectURL(file);
+        setPreview(objectUrl);
         setUploadError(null);
+
+        if (isVideo) {
+            const detected = await getMediaDurationMs(objectUrl, 'video');
+            if (detected) {
+                setDuration(detected);
+                setSliderMax((prev) => Math.max(prev, detected));
+            }
+        }
+
         setIsUploading(true);
 
         const formData = new FormData();
@@ -563,6 +609,12 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
     const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        const detected = await getMediaDurationMs(objectUrl, 'audio');
+        if (detected) {
+            setDuration(detected);
+            setSliderMax((prev) => Math.max(prev, detected));
+        }
         setIsAudioUploading(true);
 
         const formData = new FormData();
@@ -695,8 +747,8 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium">Duration: {duration / 1000}s</label>
-                        <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
+                        <label className="mb-1 block text-sm font-medium">Duration: {formatDuration(duration)}</label>
+                        <input type="range" min="1000" max={sliderMax} step="1000" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
                     </div>
                     <div className="flex gap-2">
                         <button type="submit" disabled={!canSubmit} className="flex-1 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 py-2 text-sm font-medium text-white shadow-sm shadow-violet-500/20 hover:opacity-90 transition-opacity disabled:opacity-50">
