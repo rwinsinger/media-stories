@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { CreditCard, LayoutGrid, Share2, Users } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { CreditCard, LayoutGrid, Share2, ShieldCheck, Users } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -14,8 +14,9 @@ import {
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
+import { index as adminIndex } from '@/routes/admin';
 
-const mainNavItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -39,6 +40,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const mainNavItems: NavItem[] = auth.user?.is_admin
+        ? [...baseNavItems, { title: 'Admin', href: adminIndex.url(), icon: ShieldCheck }]
+        : baseNavItems;
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>

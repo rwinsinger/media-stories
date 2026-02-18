@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Menu, Search, ShieldCheck } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,18 +35,11 @@ import type { BreadcrumbItem, NavItem } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 import { dashboard } from '@/routes';
+import { index as adminIndex } from '@/routes/admin';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
 
 const rightNavItems: NavItem[] = [
     {
@@ -69,6 +62,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const mainNavItems: NavItem[] = [
+        { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+        ...(auth.user?.is_admin ? [{ title: 'Admin', href: adminIndex.url(), icon: ShieldCheck }] : []),
+    ];
     return (
         <>
             <div className="border-b border-sidebar-border/80">
