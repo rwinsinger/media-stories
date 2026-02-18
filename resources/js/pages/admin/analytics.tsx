@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -61,7 +61,7 @@ export default function AdminAnalytics() {
     })();
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Analytics" />
             <div className="p-6 space-y-8">
                 <h1 className="text-2xl font-bold">Analytics</h1>
@@ -141,6 +141,6 @@ export default function AdminAnalytics() {
                     </>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

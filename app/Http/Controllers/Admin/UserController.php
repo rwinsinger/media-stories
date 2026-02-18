@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Models\Friendship;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
@@ -19,9 +20,26 @@ class UserController extends Controller
             $query->orderByDesc('created_at')->limit(50);
         }]);
 
+        $stories = $user->stories()
+            ->orderByDesc('created_at')
+            ->get(['id', 'title', 'is_published', 'is_featured', 'is_flagged', 'frame_count', 'view_count', 'created_at']);
+
+        $friends = Friendship::query()
+            ->where('status', 'accepted')
+            ->where(function ($q) use ($user): void {
+                $q->where('requester_id', $user->id)
+                    ->orWhere('addressee_id', $user->id);
+            })
+            ->with(['requester:id,name,email', 'addressee:id,name,email'])
+            ->get()
+            ->map(fn ($f) => $f->requester_id === $user->id ? $f->addressee : $f->requester)
+            ->values();
+
         return response()->json([
             'user' => $user,
-            'story_count' => $user->stories()->count(),
+            'story_count' => $stories->count(),
+            'stories' => $stories,
+            'friends' => $friends,
             'activity_logs' => $user->activityLogs,
         ]);
     }

@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem, Story } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,7 +40,7 @@ export default function AdminStories() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Stories" />
             <div className="p-6">
                 <h1 className="mb-6 text-2xl font-bold">All Stories</h1>
@@ -106,6 +106,6 @@ export default function AdminStories() {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem, SiteConfig } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -46,7 +46,7 @@ export default function AdminConfig() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Site Config" />
             <div className="p-6">
                 <div className="mb-6 flex items-center justify-between">
@@ -84,6 +84,6 @@ export default function AdminConfig() {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

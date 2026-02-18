@@ -15,6 +15,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'subscription_tier' => ['sometimes', 'in:free,premium'],
+            'subscription_status' => ['sometimes', 'in:active,cancelled,expired'],
             'is_admin' => ['sometimes', 'boolean'],
             'is_suspended' => ['sometimes', 'boolean'],
             'suspended_reason' => ['nullable', 'string', 'max:500'],

@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem, User } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,7 +36,7 @@ export default function AdminUsers() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Users" />
             <div className="p-6">
                 <h1 className="mb-6 text-2xl font-bold">Users</h1>
@@ -124,6 +124,6 @@ export default function AdminUsers() {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

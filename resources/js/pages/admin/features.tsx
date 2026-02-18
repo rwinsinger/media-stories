@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem, FeatureFlag } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,7 +34,7 @@ export default function AdminFeatures() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Feature Flags" />
             <div className="p-6">
                 <h1 className="mb-6 text-2xl font-bold">Feature Flags</h1>
@@ -66,6 +66,6 @@ export default function AdminFeatures() {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

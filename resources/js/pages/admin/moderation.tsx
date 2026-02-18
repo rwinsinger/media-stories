@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import AdminLayout from '@/layouts/admin-layout';
 import type { BreadcrumbItem, Story } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,7 +36,7 @@ export default function AdminModeration() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Moderation" />
             <div className="p-6">
                 <h1 className="mb-6 text-2xl font-bold">Moderation Queue</h1>
@@ -94,6 +94,6 @@ export default function AdminModeration() {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }
