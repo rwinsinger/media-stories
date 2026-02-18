@@ -4,26 +4,30 @@ import AppLayout from '@/layouts/app-layout';
 import type { Auth, BreadcrumbItem, Frame, Story } from '@/types';
 
 interface Props {
-    story: Story;
+    storyId: string;
     [key: string]: unknown;
 }
 
 export default function StoryShow() {
-    const { story, auth } = usePage<Props & { auth: Auth }>().props;
+    const { storyId, auth } = usePage<Props & { auth: Auth }>().props;
+    const [story, setStory] = useState<Story | null>(null);
     const [frames, setFrames] = useState<Frame[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: story.title, href: `/story/${story.id}/view` },
+        { title: story?.title ?? 'Story', href: `/story/${storyId}/view` },
     ];
 
     useEffect(() => {
-        fetch(`/api/stories/${story.id}/frames`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        fetch(`/api/stories/${storyId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then((r) => r.json())
-            .then(setFrames);
-    }, [story.id]);
+            .then((data: Story) => {
+                setStory(data);
+                setFrames(Array.isArray(data.frames) ? data.frames : []);
+            });
+    }, [storyId]);
 
     useEffect(() => {
         if (!isPlaying || frames.length === 0) return;
@@ -40,7 +44,15 @@ export default function StoryShow() {
     }, [isPlaying, currentIndex, frames]);
 
     const currentFrame = frames[currentIndex];
-    const isOwner = auth.user.id === story.user_id;
+    const isOwner = story ? auth.user.id === story.user_id : false;
+
+    if (!story) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <div className="p-6 animate-pulse">Loading story...</div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -49,7 +61,10 @@ export default function StoryShow() {
                 <div className="mb-4 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">{story.title}</h1>
-                        {story.description && <p className="text-muted-foreground">{story.description}</p>}
+                        {!story.is_published && (
+                            <span className="mt-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">Draft</span>
+                        )}
+                        {story.description && <p className="mt-1 text-muted-foreground">{story.description}</p>}
                     </div>
                     {isOwner && (
                         <a href={`/story/${story.id}/edit`} className="rounded-md border px-4 py-2 hover:bg-accent">

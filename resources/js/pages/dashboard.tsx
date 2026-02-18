@@ -108,11 +108,9 @@ export default function Dashboard() {
                                     <button onClick={() => router.visit(`/story/${story.id}/edit`)} className="flex-1 rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
                                         Edit
                                     </button>
-                                    {story.is_published && (
-                                        <button onClick={() => router.visit(`/story/${story.id}/view`)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
-                                            View
-                                        </button>
-                                    )}
+                                    <button onClick={() => router.visit(`/story/${story.id}/view`)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
+                                        {story.is_published ? 'View' : 'Preview'}
+                                    </button>
                                     <button onClick={() => void deleteStory(story.id)} className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
                                         Delete
                                     </button>

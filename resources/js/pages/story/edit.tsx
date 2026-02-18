@@ -39,7 +39,8 @@ export default function StoryEdit({ storyId }: Props) {
                 headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({ title, description, is_published: isPublished }),
             });
-            setStory(await r.json());
+            const updated = await r.json() as Story;
+            setStory((prev) => prev ? { ...prev, ...updated, frames: prev.frames } : prev);
         } finally {
             setIsSaving(false);
         }
@@ -183,14 +184,12 @@ export default function StoryEdit({ storyId }: Props) {
 
                         <div className="rounded-lg border p-4 space-y-2">
                             <h2 className="mb-3 font-semibold">Actions</h2>
-                            {story.is_published && (
-                                <button
-                                    onClick={() => router.visit(`/story/${story.id}/view`)}
-                                    className="w-full rounded-md border px-4 py-2 text-sm hover:bg-accent"
-                                >
-                                    Preview Story
-                                </button>
-                            )}
+                            <button
+                                onClick={() => router.visit(`/story/${story.id}/view`)}
+                                className="w-full rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                            >
+                                {story.is_published ? 'View Story' : 'Preview Draft'}
+                            </button>
                             <button
                                 onClick={() => void deleteStory()}
                                 className="w-full rounded-md border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -219,11 +218,50 @@ export default function StoryEdit({ storyId }: Props) {
 }
 
 function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: string; orderIndex: number; onClose: () => void; onAdded: (frame: Frame) => void }) {
+    const [inputMode, setInputMode] = useState<'file' | 'url'>('file');
     const [mediaUrl, setMediaUrl] = useState('');
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
     const [textContent, setTextContent] = useState('');
     const [duration, setDuration] = useState(5000);
+    const [isUploading, setIsUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Set media type from file
+        const isVideo = file.type.startsWith('video/');
+        setMediaType(isVideo ? 'video' : 'image');
+        setPreview(URL.createObjectURL(file));
+        setUploadError(null);
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const r = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData,
+            });
+            const data = await r.json() as { url?: string; message?: string };
+            if (r.ok && data.url) {
+                setMediaUrl(data.url);
+            } else {
+                setUploadError(data.message ?? 'Upload failed');
+                setPreview(null);
+            }
+        } catch {
+            setUploadError('Upload failed. Please try again.');
+            setPreview(null);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -242,35 +280,88 @@ function AddFrameModal({ storyId, orderIndex, onClose, onAdded }: { storyId: str
         }
     };
 
+    const canSubmit = mediaUrl && !isUploading && !isSubmitting;
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto">
                 <h2 className="mb-4 text-lg font-semibold">Add Frame</h2>
                 <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">Media Type</label>
-                        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as 'image' | 'video')} className="w-full rounded-md border px-3 py-2">
-                            <option value="image">Image</option>
-                            <option value="video">Video</option>
-                        </select>
+
+                    {/* Input mode toggle */}
+                    <div className="flex rounded-md border overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setInputMode('file')}
+                            className={`flex-1 py-2 text-sm font-medium transition-colors ${inputMode === 'file' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            Upload File
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setInputMode('url')}
+                            className={`flex-1 py-2 text-sm font-medium transition-colors ${inputMode === 'url' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            Use URL
+                        </button>
                     </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">Media URL</label>
-                        <input type="text" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} required className="w-full rounded-md border px-3 py-2" placeholder="https://..." />
-                    </div>
+
+                    {inputMode === 'file' ? (
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Choose Image or Video</label>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+                                onChange={(e) => void handleFileChange(e)}
+                                className="w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:text-primary-foreground"
+                            />
+                            {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
+                            {isUploading && <p className="mt-1 text-xs text-muted-foreground">Uploading...</p>}
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Media URL</label>
+                            <input
+                                type="url"
+                                value={mediaUrl}
+                                onChange={(e) => { setMediaUrl(e.target.value); setPreview(e.target.value || null); }}
+                                className="w-full rounded-md border px-3 py-2 text-sm"
+                                placeholder="https://..."
+                            />
+                            <div className="mt-1">
+                                <label className="mb-1 block text-sm font-medium">Media Type</label>
+                                <select value={mediaType} onChange={(e) => setMediaType(e.target.value as 'image' | 'video')} className="w-full rounded-md border px-3 py-2 text-sm">
+                                    <option value="image">Image</option>
+                                    <option value="video">Video</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Preview */}
+                    {preview && (
+                        <div className="rounded-md overflow-hidden bg-muted">
+                            {mediaType === 'image' ? (
+                                <img src={preview} alt="Preview" className="max-h-40 w-full object-contain" />
+                            ) : (
+                                <video src={preview} className="max-h-40 w-full" controls />
+                            )}
+                        </div>
+                    )}
+
                     <div>
                         <label className="mb-1 block text-sm font-medium">Text Overlay (optional)</label>
-                        <textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} maxLength={500} rows={2} className="w-full rounded-md border px-3 py-2" />
+                        <textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} maxLength={500} rows={2} className="w-full rounded-md border px-3 py-2 text-sm" />
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-medium">Duration: {duration / 1000}s</label>
                         <input type="range" min="1000" max="30000" step="500" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full" />
                     </div>
                     <div className="flex gap-2">
-                        <button type="submit" disabled={isSubmitting || !mediaUrl} className="flex-1 rounded-md bg-primary py-2 text-primary-foreground disabled:opacity-50">
-                            {isSubmitting ? 'Adding...' : 'Add Frame'}
+                        <button type="submit" disabled={!canSubmit} className="flex-1 rounded-md bg-primary py-2 text-sm text-primary-foreground disabled:opacity-50">
+                            {isSubmitting ? 'Adding...' : isUploading ? 'Uploading...' : 'Add Frame'}
                         </button>
-                        <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 hover:bg-accent">Cancel</button>
+                        <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
                     </div>
                 </form>
             </div>
