@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\FrameController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\ImageProcessorController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ShareLinkController;
 use App\Http\Controllers\StoryController;
@@ -39,6 +40,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/frames/{frame}', [FrameController::class, 'show']);
     Route::put('/frames/{frame}', [FrameController::class, 'update']);
     Route::delete('/frames/{frame}', [FrameController::class, 'destroy']);
+
+    // Invitations
+    Route::post('/invitations', [InvitationController::class, 'store']);
+    Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept']);
 
     // Friends
     Route::get('/friends/search', [FriendController::class, 'search']);

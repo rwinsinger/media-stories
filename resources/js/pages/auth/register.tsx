@@ -9,7 +9,15 @@ import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
+function getSearchParam(key: string): string {
+    if (typeof window === 'undefined') { return ''; }
+    return new URLSearchParams(window.location.search).get(key) ?? '';
+}
+
 export default function Register() {
+    const invitationEmail = getSearchParam('email');
+    const hasInvitation = !!getSearchParam('invitation');
+
     return (
         <AuthLayout
             title="Create an account"
@@ -53,7 +61,15 @@ export default function Register() {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
+                                    defaultValue={invitationEmail}
+                                    readOnly={hasInvitation && !!invitationEmail}
+                                    className={hasInvitation && invitationEmail ? 'bg-muted text-muted-foreground cursor-not-allowed' : ''}
                                 />
+                                {hasInvitation && invitationEmail && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Email pre-filled from your invitation link.
+                                    </p>
+                                )}
                                 <InputError message={errors.email} />
                             </div>
 

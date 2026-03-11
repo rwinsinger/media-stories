@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Frame;
+use App\Models\Friendship;
+use App\Models\Invitation;
 use App\Models\User;
 use App\Observers\FrameObserver;
 use Carbon\CarbonImmutable;
@@ -33,6 +35,40 @@ class AppServiceProvider extends ServiceProvider
                 $event->user->markEmailAsVerified();
             });
         }
+
+        Event::listen(Registered::class, function (Registered $event): void {
+            $newUser = $event->user;
+
+            $invitation = Invitation::query()
+                ->pending()
+                ->where('email', $newUser->email)
+                ->first();
+
+            if (! $invitation) {
+                return;
+            }
+
+            $alreadyFriends = Friendship::query()
+                ->where(function ($query) use ($newUser, $invitation): void {
+                    $query->where('requester_id', $invitation->invited_by)->where('addressee_id', $newUser->id);
+                })
+                ->orWhere(function ($query) use ($newUser, $invitation): void {
+                    $query->where('requester_id', $newUser->id)->where('addressee_id', $invitation->invited_by);
+                })
+                ->exists();
+
+            if (! $alreadyFriends) {
+                Friendship::query()->create([
+                    'requester_id' => $invitation->invited_by,
+                    'addressee_id' => $newUser->id,
+                    'status' => 'accepted',
+                    'requested_at' => now(),
+                    'responded_at' => now(),
+                ]);
+            }
+
+            $invitation->update(['accepted_at' => now()]);
+        });
     }
 
     protected function configureDefaults(): void

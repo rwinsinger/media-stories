@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ShareLinkController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -47,5 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
 // Public share link viewer
 Route::get('share/{token}', [ShareLinkController::class, 'show'])->name('share.show');
+
+// Public invite link
+Route::get('invite/{token}', [InvitationController::class, 'show'])->name('invite.show');
 
 require __DIR__.'/settings.php';

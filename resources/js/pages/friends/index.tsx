@@ -9,21 +9,64 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Friends', href: '/friends' },
 ];
 
+interface SearchResult {
+    user: User | null;
+    friendship?: Friendship;
+}
+
+function getCsrfToken(): string {
+    return decodeURIComponent(
+        document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('XSRF-TOKEN='))
+            ?.split('=')[1] ?? '',
+    );
+}
+
 export default function FriendsIndex() {
     const { friends, acceptedFriends, pendingReceived, isLoading, sendRequest, respond, unfriend } = useFriends();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [searchEmail, setSearchEmail] = useState('');
+    const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+    const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
-    const handleSearch = async (q: string) => {
-        setSearchQuery(q);
-        if (q.length < 2) { setSearchResults([]); return; }
+    const handleSearch = async (email: string) => {
+        setSearchEmail(email);
+        setSearchResult(null);
+        setInviteStatus('idle');
+        if (!email.includes('@')) { return; }
         setIsSearching(true);
-        const res = await fetch(`/api/friends/search?q=${encodeURIComponent(q)}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        });
-        setSearchResults(await res.json());
-        setIsSearching(false);
+        try {
+            const res = await fetch(`/api/friends/search?email=${encodeURIComponent(email)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await res.json() as SearchResult;
+            setSearchResult(data);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleSendInvite = async () => {
+        setInviteStatus('sending');
+        try {
+            const res = await fetch('/api/invitations', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                },
+                body: JSON.stringify({ email: searchEmail }),
+            });
+            if (res.ok || res.status === 201) {
+                setInviteStatus('sent');
+            } else {
+                setInviteStatus('error');
+            }
+        } catch {
+            setInviteStatus('error');
+        }
     };
 
     const pendingSentIds = friends.filter((f) => f.status === 'pending').map((f) => f.addressee_id);
@@ -31,39 +74,61 @@ export default function FriendsIndex() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Friends" />
-            <div className="mx-auto max-w-3xl p-6 space-y-8">
+            <div className="mx-auto max-w-4xl p-6 space-y-8">
                 <h1 className="text-2xl font-bold">Friends</h1>
 
                 {/* Search */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium">Add Friend</label>
+                    <label className="mb-1 block text-sm font-medium">Add Friend by Email</label>
                     <div className="relative">
                         <input
-                            type="text"
-                            value={searchQuery}
+                            type="email"
+                            value={searchEmail}
                             onChange={(e) => void handleSearch(e.target.value)}
                             className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="Search by name or email..."
+                            placeholder="friend@example.com"
                         />
                         {isSearching && <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">Searching...</span>}
                     </div>
-                    {searchResults.length > 0 && (
+
+                    {searchResult !== null && (
                         <div className="mt-1 rounded-md border bg-background shadow-md">
-                            {searchResults.map((user: User) => (
-                                <div key={user.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent">
+                            {searchResult.user ? (
+                                <div className="flex items-center justify-between px-4 py-2 hover:bg-accent">
                                     <div>
-                                        <p className="font-medium">{user.name}</p>
-                                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                                        <p className="font-medium">{searchResult.user.name}</p>
+                                        <p className="text-xs text-muted-foreground">{searchResult.user.email}</p>
                                     </div>
                                     <button
-                                        onClick={() => { void sendRequest(user.id); setSearchResults([]); setSearchQuery(''); }}
-                                        disabled={pendingSentIds.includes(user.id)}
+                                        onClick={() => {
+                                            void sendRequest(searchResult.user!.id);
+                                            setSearchResult(null);
+                                            setSearchEmail('');
+                                        }}
+                                        disabled={pendingSentIds.includes(searchResult.user.id) || !!searchResult.friendship}
                                         className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50"
                                     >
-                                        {pendingSentIds.includes(user.id) ? 'Pending' : 'Add Friend'}
+                                        {searchResult.friendship ? 'Already friends' : pendingSentIds.includes(searchResult.user.id) ? 'Pending' : 'Add Friend'}
                                     </button>
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="flex flex-col gap-2 px-4 py-3">
+                                    <p className="text-sm text-muted-foreground">No account found.</p>
+                                    {inviteStatus === 'sent' ? (
+                                        <span className="text-sm text-green-600 font-medium">Invitation sent!</span>
+                                    ) : inviteStatus === 'error' ? (
+                                        <span className="text-sm text-red-600">Already invited or error</span>
+                                    ) : (
+                                        <button
+                                            onClick={() => void handleSendInvite()}
+                                            disabled={inviteStatus === 'sending'}
+                                            className="self-start rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50"
+                                        >
+                                            {inviteStatus === 'sending' ? 'Sending…' : 'Send Invite'}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
